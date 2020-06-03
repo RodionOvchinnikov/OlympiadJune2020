@@ -2,6 +2,7 @@
 using BehavioralAlgorithms.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
+using System;
 using WebApiApplication.DTO;
 using WebApiApplication.Models.Requests;
 using WebApiApplication.Models.Responses;
@@ -14,9 +15,9 @@ namespace WebApiApplication.Controllers
     public class GameController : ControllerBase
     {
         private readonly IOptions<SnakeOptions> _options;
-        private readonly IMoveBehavior<StrongMoveBehavior> _behavior;
+        private readonly IMoveBehavior<BFSBehavior> _behavior;
 
-        public GameController(IOptions<SnakeOptions> options, IMoveBehavior<StrongMoveBehavior> behavior)
+        public GameController(IOptions<SnakeOptions> options, IMoveBehavior<BFSBehavior> behavior)
         {
             _options = options;
             _behavior = behavior;
@@ -60,7 +61,7 @@ namespace WebApiApplication.Controllers
             {
                 return Ok(_behavior.Move(MoveDto.MapFromDto(move)));
             }
-            catch
+            catch(Exception ex)
             {
                 return Ok();
             }
