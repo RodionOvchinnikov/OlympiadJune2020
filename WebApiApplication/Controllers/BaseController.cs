@@ -64,7 +64,16 @@ namespace WebApiApplication.Controllers
         {
             try
             {
-                return Ok(_behavior.Move(MoveDto.MapFromDto(move)));
+                var startTime = DateTime.Now;
+                var result = _behavior.Move(MoveDto.MapFromDto(move));
+
+                var diffMilliseconds = (DateTime.Now - startTime).Milliseconds;
+                if (diffMilliseconds > 200)
+                {
+                    Console.WriteLine($"!!!!!!! Вычисление заняло {diffMilliseconds}");
+                }
+
+                return Ok(result);
             }
             catch (Exception ex)
             {
