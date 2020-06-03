@@ -1,10 +1,11 @@
 ﻿using BehavioralAlgorithms.Interfaces;
 using BehavioralAlgorithms.Models;
+using System;
 using System.Linq;
 
 namespace BehavioralAlgorithms.Behaviors
 {
-    public class StrongMoveBehavior : IBehavior
+    public class RandomBehavior : IBehavior
     {
         public MoveDirection Move(MoveState move)
         {
@@ -13,7 +14,9 @@ namespace BehavioralAlgorithms.Behaviors
                 return new MoveDirection { Move = "up", Taunt = "No way" };
             }
 
-            return new MoveDirection { Move = "right", Taunt = "!!Kavabanga!!" };
+            var directions = new[] { "up", "left", "down", "right" };
+
+            return new MoveDirection { Move = directions[new Random().Next(0, 3)], Taunt = "!!Kavabanga!!" };
         }
     }
 }

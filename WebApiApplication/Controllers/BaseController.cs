@@ -1,5 +1,4 @@
-﻿using BehavioralAlgorithms.Behaviors;
-using BehavioralAlgorithms.Interfaces;
+﻿using BehavioralAlgorithms.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using System;
@@ -11,58 +10,65 @@ using WebApiApplication.Options;
 namespace WebApiApplication.Controllers
 {
     [ApiController]
-    [Route("/")]
-    public class GameController : ControllerBase
+    [Route("[Controller]")]
+    public abstract class BaseController : ControllerBase
     {
         private readonly IOptions<SnakeOptions> _options;
-        private readonly IMoveBehavior<BFSBehavior> _behavior;
+        private readonly IMoveBehavior _behavior;
 
-        public GameController(IOptions<SnakeOptions> options, IMoveBehavior<BFSBehavior> behavior)
+        public BaseController(IOptions<SnakeOptions> options, IMoveBehavior behavior)
         {
             _options = options;
             _behavior = behavior;
         }
 
         [HttpGet("ping")]
-        public IActionResult Ping()
+        public virtual IActionResult Ping()
         {
-            return Ok("pong");
+            return Ok($"Controller type is => {GetType()}");
         }
 
 
         [HttpPost("start")]
-        public IActionResult Start([FromBody]StartRequest request)
+        [HttpPost("{name}/start")]
+        public virtual IActionResult Start([FromBody]StartRequest request, [FromRoute] string name)
         {
             try
             {
                 _behavior.Init(request.GameId, request.Height, request.Width);
 
+                // Если имя змейки не передали в параметрах, то берем из конфигов
+                name = string.IsNullOrEmpty(name) ? _options.Value.Name : name;
+
                 return Ok(new StartResponse
                 {
+                    Name = name,
                     Color = _options.Value.Color,
                     HeadType = _options.Value.HeadType,
-                    Name = _options.Value.Name,
                     HeadUrl = _options.Value.HeadUrl,
                     SecondaryColor = _options.Value.SecondaryColor,
                     TailType = _options.Value.TailType,
                     Taunt = _options.Value.Taunt
                 });
             }
-            catch
+            catch (Exception ex)
             {
+                Console.WriteLine($"Ошибка при вызове Start => {ex.Message}");
                 return Ok();
             }
         }
 
         [HttpPost("move")]
-        public IActionResult Move([FromBody] MoveDto move)
+        [HttpPost("{_}/move")] // Для универсальности ¯\_(ツ)_/¯
+        public virtual IActionResult Move([FromBody] MoveDto move)
         {
             try
             {
                 return Ok(_behavior.Move(MoveDto.MapFromDto(move)));
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
+                Console.WriteLine($"Ошибка при вызове Move => {ex.Message}");
                 return Ok();
             }
         }

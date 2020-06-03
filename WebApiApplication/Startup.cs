@@ -29,6 +29,7 @@ namespace WebApiApplication
             services.Configure<SnakeOptions>(Configuration.GetSection("snakeOptions"));
 
             services.AddSingleton<IMoveBehavior<BFSBehavior>, MoveBehavior<BFSBehavior>>();
+            services.AddSingleton<IMoveBehavior<RandomBehavior>, MoveBehavior<RandomBehavior>>();
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
