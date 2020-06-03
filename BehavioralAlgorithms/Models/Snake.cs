@@ -1,4 +1,6 @@
-﻿namespace BehavioralAlgorithms.Models
+﻿using System.Drawing;
+
+namespace BehavioralAlgorithms.Models
 {
     public class Snake
     {
@@ -11,5 +13,7 @@
         public int HealthPoints { get; set; }
 
         public Point[] Coords { get; set; }
+
+        public Point HeadPosition => Coords[0];
     }
 }

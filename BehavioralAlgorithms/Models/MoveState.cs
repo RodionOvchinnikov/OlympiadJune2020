@@ -1,4 +1,6 @@
-﻿namespace BehavioralAlgorithms.Models
+﻿using System.Drawing;
+
+namespace BehavioralAlgorithms.Models
 {
     public class MoveState
     {
