@@ -9,7 +9,7 @@ namespace BehavioralAlgorithms.Behaviors
     public class BFSBehavior : IBehavior
     {
         private List<Point> wave = new List<Point>();
-        private int wall = 99;
+        private readonly int wall = int.MaxValue;
 
         private bool FindPath(Point headPosition, Point fruitPosition, int[,] map, int Width, int Height)
         {
@@ -100,7 +100,7 @@ namespace BehavioralAlgorithms.Behaviors
 
         public MoveDirection Move(MoveState state)
         {
-            Snake snake = state.Snakes.Single(x => x.Id == state.You);
+            Snake mainSnake = state.Snakes.Single(x => x.Id == state.You);
 
             int[,] map = new int[state.Width, state.Height];
 
@@ -112,18 +112,26 @@ namespace BehavioralAlgorithms.Behaviors
                 }
             }
 
+            foreach (var snake in state.Snakes)
+            {
+                foreach (var cell in snake.Coords)
+                {
+                    map[cell.X, cell.Y] = int.MaxValue;
+                }
+            }
+
+            map[mainSnake.HeadPosition.X, mainSnake.HeadPosition.Y] = -1;
+
             foreach (var fruit in state.Food)
             {
-                
-                
-                FindPath(snake.HeadPosition, fruit, map, state.Width, state.Height);
+                FindPath(mainSnake.HeadPosition, fruit, map, state.Width, state.Height);
             }
 
             // Берем вторую ячейку пути, т.к. первая - это ячейка из которой мы начинаем движение
             var nextCell = wave[1];
 
-            int translationX = snake.HeadPosition.X - nextCell.X;
-            int translationY = snake.HeadPosition.Y - nextCell.Y;
+            int translationX = mainSnake.HeadPosition.X - nextCell.X;
+            int translationY = mainSnake.HeadPosition.Y - nextCell.Y;
 
             if (translationX == 0)
             {
