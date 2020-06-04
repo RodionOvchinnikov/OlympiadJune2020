@@ -8,27 +8,22 @@ namespace BehavioralAlgorithms.Behaviors
 {
     public class BFSBehavior : IBehavior
     {
-        private List<Point> wave = new List<Point>();
         private readonly int wall = int.MaxValue;
 
-        private bool FindPath(Point headPosition, Point fruitPosition, int[,] map, int Width, int Height)
+        private List<Point> FindPath(Point headPosition, Point fruitPosition, int[,] map, int Width, int Height)
         {
+            List<Point> wave = new List<Point>();
             int x = headPosition.X;
             int y = headPosition.Y;
             int nx = fruitPosition.X;
             int ny = fruitPosition.Y;
 
-            if (map[x, y] == wall || map[nx, ny] == wall)
-            {
-                return false;
-            }
-
-            //волновой алгоритм поиска пути (заполнение значений достижимости) начиная от конца пути
+            //заполнение значений достижимости(длинны пути) для конечной точки
             int[,] cloneMap = (int[,])map.Clone();
             List<Point> oldWave = new List<Point>();
             oldWave.Add(new Point(nx, ny));
             int nstep = 0;
-            map[nx, ny] = nstep;
+            cloneMap[nx, ny] = nstep;
 
             int[] dx = { 0, 1, 0, -1 };
             int[] dy = { -1, 0, 1, 0 };
@@ -46,10 +41,10 @@ namespace BehavioralAlgorithms.Behaviors
 
                         if (ny >= 0 && ny < Height && nx >= 0 && nx < Width)
                         {
-                            if (map[nx, ny] == -1)
+                            if (cloneMap[nx, ny] == -1)
                             {
                                 wave.Add(new Point(nx, ny));
-                                map[nx, ny] = nstep;
+                                cloneMap[nx, ny] = nstep;
                             }
                         }
                     }
@@ -58,13 +53,12 @@ namespace BehavioralAlgorithms.Behaviors
 
             }
 
-            //волновйо алгоритм поиска пути начиная от начала
-            bool flag = true;
             wave.Clear();
-            wave.Add(new Point(x, y));
-            while (map[x, y] != 0)
+            //wave.Add(new Point(x, y));
+            while (cloneMap[x, y] != 0)
             {
-                flag = true;
+                //поиск пути от точки отправления
+                bool flag = true;
                 for (int d = 0; d < 4; d++)
                 {
                     nx = x + dx[d];
@@ -72,7 +66,7 @@ namespace BehavioralAlgorithms.Behaviors
 
                     if (ny >= 0 && ny < Height && nx >= 0 && nx < Width)
                     {
-                        if (map[x, y] - 1 == map[nx, ny])
+                        if (cloneMap[x, y] - 1 == cloneMap[nx, ny])
                         {
                             x = nx;
                             y = ny;
@@ -88,14 +82,7 @@ namespace BehavioralAlgorithms.Behaviors
                 }
             }
 
-            map = cloneMap;
-
-            wave.ForEach(delegate (Point i)
-            {
-                map[i.X, i.Y] = 0;
-            });
-
-            return true;
+            return wave;
         }
 
         public MoveDirection Move(MoveState state)
@@ -116,39 +103,52 @@ namespace BehavioralAlgorithms.Behaviors
             {
                 foreach (var cell in snake.Coords)
                 {
-                    map[cell.X, cell.Y] = int.MaxValue;
+                    map[cell.X, cell.Y] = wall;
                 }
             }
 
             map[mainSnake.HeadPosition.X, mainSnake.HeadPosition.Y] = -1;
 
+            List<List<Point>> paths = new List<List<Point>>();
             foreach (var fruit in state.Food)
             {
-                FindPath(mainSnake.HeadPosition, fruit, map, state.Width, state.Height);
+                var path = FindPath(mainSnake.HeadPosition, fruit, map, state.Width, state.Height);
+                paths.Add(path);
             }
 
-            // Берем вторую ячейку пути, т.к. первая - это ячейка из которой мы начинаем движение
-            var nextCell = wave[1];
+            var pathToNearestFruit = paths.OrderBy(x => x.Count).FirstOrDefault(x => x.Count != 0);
 
-            int translationX = mainSnake.HeadPosition.X - nextCell.X;
-            int translationY = mainSnake.HeadPosition.Y - nextCell.Y;
-
-            if (translationX == 0)
+            // Если нашли путь до фрукта
+            if(pathToNearestFruit != null)
             {
-                if(translationY > 0)
+                // Берем первую ячейку пути, в которую нам и надо шагнуть
+                var nextCell = pathToNearestFruit[0];
+
+                int translationX = mainSnake.HeadPosition.X - nextCell.X;
+                int translationY = mainSnake.HeadPosition.Y - nextCell.Y;
+
+                if (translationX == 0)
                 {
-                    return new MoveDirection { Move = "up", Taunt = "Moving up" };
-                } 
+                    if (translationY > 0)
+                    {
+                        return new MoveDirection { Move = "up", Taunt = "Moving up" };
+                    }
+                    else
+                    {
+                        return new MoveDirection { Move = "down", Taunt = "Moving down" };
+                    }
+                }
+
+                if (translationX > 0)
+                {
+                    return new MoveDirection { Move = "left", Taunt = "Moving left" };
+                }
                 else
                 {
-                    return new MoveDirection { Move = "down", Taunt = "Moving down" };
+                    return new MoveDirection { Move = "right", Taunt = "Moving right" };
                 }
             }
-
-            if(translationX > 0)
-            {
-                return new MoveDirection { Move = "left", Taunt = "Moving left" };
-            }
+            // Если не смогли найти путь до фрукта. TODO: реализовать движение к самой дальней точке от головы змеи с помощью гамильтоновых циклов
             else
             {
                 return new MoveDirection { Move = "right", Taunt = "Moving right" };
