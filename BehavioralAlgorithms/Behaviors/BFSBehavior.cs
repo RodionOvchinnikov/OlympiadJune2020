@@ -1,4 +1,5 @@
-﻿using BehavioralAlgorithms.Interfaces;
+﻿using BehavioralAlgorithms.Behaviors.Hamiltonian;
+using BehavioralAlgorithms.Interfaces;
 using BehavioralAlgorithms.Models;
 using System.Collections.Generic;
 using System.Drawing;
@@ -151,7 +152,9 @@ namespace BehavioralAlgorithms.Behaviors
             // Если не смогли найти путь до фрукта. TODO: реализовать движение к самой дальней точке от головы змеи с помощью гамильтоновых циклов
             else
             {
-                return new MoveDirection { Move = "right", Taunt = "Moving right" };
+                var direction = HamiltonianEngine.Move(state);
+
+                return new MoveDirection { Move = direction, Taunt = $"Moving {direction}" };
             }
         }
     }

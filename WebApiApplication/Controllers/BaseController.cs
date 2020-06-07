@@ -62,9 +62,9 @@ namespace WebApiApplication.Controllers
         [HttpPost("{_}/move")] // Для универсальности ¯\_(ツ)_/¯
         public virtual IActionResult Move([FromBody] MoveDto move)
         {
+            var startTime = DateTime.Now;
             try
             {
-                var startTime = DateTime.Now;
                 var result = _behavior.Move(MoveDto.MapFromDto(move));
 
                 var diffMilliseconds = (DateTime.Now - startTime).Milliseconds;
@@ -77,6 +77,11 @@ namespace WebApiApplication.Controllers
             }
             catch (Exception ex)
             {
+                var diffMilliseconds = (DateTime.Now - startTime).Milliseconds;
+                if (diffMilliseconds > 200)
+                {
+                    Console.WriteLine($"!!!!!!! Вычисление заняло {diffMilliseconds}");
+                }
                 Console.WriteLine($"Ошибка при вызове Move => {ex.Message}");
                 return Ok();
             }
