@@ -8,8 +8,6 @@ namespace BehavioralAlgorithms.Behaviors
 {
     public class BFSBehavior : IBehavior
     {
-        private readonly int wall = int.MaxValue;
-
         private List<Point> FindPath(Point headPosition, Point fruitPosition, int[,] map, int Width, int Height)
         {
             List<Point> wave = new List<Point>();
@@ -50,11 +48,9 @@ namespace BehavioralAlgorithms.Behaviors
                     }
                 }
                 oldWave = new List<Point>(wave);
-
             }
 
             wave.Clear();
-            //wave.Add(new Point(x, y));
             while (cloneMap[x, y] != 0)
             {
                 //поиск пути от точки отправления
@@ -89,13 +85,15 @@ namespace BehavioralAlgorithms.Behaviors
         {
             Snake mainSnake = state.Snakes.Single(x => x.Id == state.You);
 
-            int[,] map = new int[state.Width, state.Height];
+            MapInformation.map = new int[state.Width, state.Height];
+            MapInformation.height = state.Height;
+            MapInformation.width = state.Width;
 
             for (int i = 0; i < state.Width; ++i)
             {
                 for(int j = 0; j < state.Height; ++j)
                 {
-                    map[i, j] = -1;
+                    MapInformation.map[i, j] = -1;
                 }
             }
 
@@ -103,16 +101,16 @@ namespace BehavioralAlgorithms.Behaviors
             {
                 foreach (var cell in snake.Coords)
                 {
-                    map[cell.X, cell.Y] = wall;
+                    MapInformation.map[cell.X, cell.Y] = MapInformation.barrier;
                 }
             }
 
-            map[mainSnake.HeadPosition.X, mainSnake.HeadPosition.Y] = -1;
+            MapInformation.map[mainSnake.HeadPosition.X, mainSnake.HeadPosition.Y] = -1;
 
             List<List<Point>> paths = new List<List<Point>>();
             foreach (var fruit in state.Food)
             {
-                var path = FindPath(mainSnake.HeadPosition, fruit, map, state.Width, state.Height);
+                var path = FindPath(mainSnake.HeadPosition, fruit, MapInformation.map, state.Width, state.Height);
                 paths.Add(path);
             }
 
@@ -148,10 +146,12 @@ namespace BehavioralAlgorithms.Behaviors
                     return new MoveDirection { Move = "right", Taunt = "Moving right" };
                 }
             }
-            // Если не смогли найти путь до фрукта. TODO: реализовать движение к самой дальней точке от головы змеи с помощью гамильтоновых циклов
+            // Если не смогли найти путь до фрукта, то тянем время с помощью движения в сторону самой удаленной доступной ячейки с помощью пути найденного поиском в глубину
             else
             {
-                return new MoveDirection { Move = "right", Taunt = "Moving right" };
+                DFSBehavior dfs = new DFSBehavior();
+
+                return dfs.Move(mainSnake.HeadPosition);
             }
         }
     }
