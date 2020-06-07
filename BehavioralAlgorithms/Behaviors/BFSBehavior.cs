@@ -114,10 +114,58 @@ namespace BehavioralAlgorithms.Behaviors
                 paths.Add(path);
             }
 
-            var pathToNearestFruit = paths.OrderBy(x => x.Count).FirstOrDefault(x => x.Count != 0);
+            List<Point> pathToNearestFruit = null;
+
+            foreach (var p in paths.OrderBy(x => x.Count))
+            {
+                if (p?.Count == 0)
+                {
+                    continue;
+                }
+
+                if (state.Snakes.Where(s => s.Id != state.You).Any(s => s.Coords[0].X == p.Last().X - 1 && s.Coords[0].Y == p.Last().Y) ||
+                    state.Snakes.Where(s => s.Id != state.You).Any(s => s.Coords[0].X == p.First().X - 1 && s.Coords[0].Y == p.First().Y))
+                {
+                    if (state.Snakes.Where(s => s.Id != state.You)?.SingleOrDefault(s => s.Coords[0].X == p.Last().X - 1 && s.Coords[0].Y == p.Last().Y)?.Coords?.Length >= mainSnake.Coords.Length ||
+                        state.Snakes.Where(s => s.Id != state.You)?.SingleOrDefault(s => s.Coords[0].X == p.First().X - 1 && s.Coords[0].Y == p.First().Y)?.Coords?.Length >= mainSnake.Coords.Length)
+                    {
+                        continue;
+                    }
+                }
+                if (state.Snakes.Where(s => s.Id != state.You).Any(s => s.Coords[0].X == p.Last().X + 1 && s.Coords[0].Y == p.Last().Y) ||
+                    state.Snakes.Where(s => s.Id != state.You).Any(s => s.Coords[0].X == p.First().X + 1 && s.Coords[0].Y == p.First().Y))
+                {
+                    if (state.Snakes.Where(s => s.Id != state.You)?.SingleOrDefault(s => s.Coords[0].X == p.Last().X + 1 && s.Coords[0].Y == p.Last().Y)?.Coords?.Length >= mainSnake.Coords.Length ||
+                        state.Snakes.Where(s => s.Id != state.You)?.SingleOrDefault(s => s.Coords[0].X == p.First().X + 1 && s.Coords[0].Y == p.First().Y)?.Coords?.Length >= mainSnake.Coords.Length)
+                    {
+                        continue;
+                    }
+                }
+                if (state.Snakes.Where(s => s.Id != state.You).Any(s => s.Coords[0].X == p.Last().X && s.Coords[0].Y == p.Last().Y - 1) ||
+                    state.Snakes.Where(s => s.Id != state.You).Any(s => s.Coords[0].X == p.First().X && s.Coords[0].Y == p.First().Y - 1))
+                {
+                    if (state.Snakes.Where(s => s.Id != state.You)?.SingleOrDefault(s => s.Coords[0].X == p.Last().X && s.Coords[0].Y == p.Last().Y - 1)?.Coords?.Length >= mainSnake.Coords.Length ||
+                        state.Snakes.Where(s => s.Id != state.You)?.SingleOrDefault(s => s.Coords[0].X == p.First().X && s.Coords[0].Y == p.First().Y - 1)?.Coords?.Length >= mainSnake.Coords.Length)
+                    {
+                        continue;
+                    }
+                }
+                if (state.Snakes.Where(s => s.Id != state.You).Any(s => s.Coords[0].X == p.Last().X && s.Coords[0].Y == p.Last().Y + 1) ||
+                    state.Snakes.Where(s => s.Id != state.You).Any(s => s.Coords[0].X == p.First().X && s.Coords[0].Y == p.First().Y + 1))
+                {
+                    if (state.Snakes.Where(s => s.Id != state.You)?.SingleOrDefault(s => s.Coords[0].X == p.Last().X && s.Coords[0].Y == p.Last().Y + 1)?.Coords?.Length >= mainSnake.Coords.Length ||
+                        state.Snakes.Where(s => s.Id != state.You)?.SingleOrDefault(s => s.Coords[0].X == p.First().X && s.Coords[0].Y == p.First().Y + 1)?.Coords?.Length >= mainSnake.Coords.Length)
+                    {
+                        continue;
+                    }
+                }
+
+                pathToNearestFruit = p;
+                break;
+            }
 
             // Если нашли путь до фрукта
-            if(pathToNearestFruit != null)
+            if (pathToNearestFruit != null)
             {
                 // Берем первую ячейку пути, в которую нам и надо шагнуть
                 var nextCell = pathToNearestFruit[0];
