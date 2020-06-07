@@ -63,7 +63,7 @@ namespace WebApiApplication.Controllers
             }
             catch(Exception ex)
             {
-                return BadRequest(ex);
+                return Ok();
             }
         }
     }
