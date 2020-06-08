@@ -1,5 +1,6 @@
 ﻿using BehavioralAlgorithms.Interfaces;
 using BehavioralAlgorithms.Models;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
@@ -83,12 +84,17 @@ namespace BehavioralAlgorithms.Behaviors
 
         public MoveDirection Move(MoveState state)
         {
+            // Наша змея
             Snake mainSnake = state.Snakes.Single(x => x.Id == state.You);
+            // Противники
+            IEnumerable<Snake> enemies = state.Snakes.Where(x => x.Id != state.You);
 
+            // информация о карте
             MapInformation.map = new int[state.Width, state.Height];
             MapInformation.height = state.Height;
             MapInformation.width = state.Width;
 
+            // Заполняем карту служебной имнформацией
             for (int i = 0; i < state.Width; ++i)
             {
                 for(int j = 0; j < state.Height; ++j)
@@ -97,72 +103,117 @@ namespace BehavioralAlgorithms.Behaviors
                 }
             }
 
-            foreach (var snake in state.Snakes)
+            // заполняем карту препятствиями
+            foreach (var enemy in enemies)
             {
-                foreach (var cell in snake.Coords)
+                foreach (var cell in enemy.Coords)
                 {
                     MapInformation.map[cell.X, cell.Y] = MapInformation.barrier;
                 }
+
+                if (enemy.Coords.Length >= mainSnake.Coords.Length)
+                {
+                    int x = 0;
+                    int y = 0;
+
+                    // Змеи находятся напротив друг друга вертикально
+                    if (Math.Abs(enemy.HeadPosition.X - mainSnake.HeadPosition.X) == 2 && (enemy.HeadPosition.Y - mainSnake.HeadPosition.Y) == 0)
+                    {
+                        if (enemy.HeadPosition.X > mainSnake.HeadPosition.X)
+                        {
+                            x = enemy.HeadPosition.X - 1;
+                        }
+                        else
+                        {
+                            x = enemy.HeadPosition.X + 1;
+                        }
+
+                        y = enemy.HeadPosition.Y;
+
+                        MapInformation.map[x, y] = MapInformation.barrier;
+                    }
+
+                    // Змеи находятся напротив друг друга горизонтально
+                    if ((enemy.HeadPosition.X - mainSnake.HeadPosition.X) == 0 && Math.Abs(enemy.HeadPosition.Y - mainSnake.HeadPosition.Y) == 2)
+                    {
+                        if (enemy.HeadPosition.Y > mainSnake.HeadPosition.Y)
+                        {
+                            y = enemy.HeadPosition.Y - 1;
+                        }
+                        else
+                        {
+                            y = enemy.HeadPosition.Y + 1;
+                        }
+
+                        x = enemy.HeadPosition.X;
+
+                        MapInformation.map[x, y] = MapInformation.barrier;
+                    }
+
+                    // Змеи находятся в друг от друга по диагонали, но в одном шаге
+                    if (Math.Abs(enemy.HeadPosition.X - mainSnake.HeadPosition.X) == 1 && Math.Abs(enemy.HeadPosition.Y - mainSnake.HeadPosition.Y) == 1)
+                    {
+                        MapInformation.map[mainSnake.HeadPosition.X, enemy.HeadPosition.Y] = MapInformation.barrier;
+                        MapInformation.map[enemy.HeadPosition.X, mainSnake.HeadPosition.Y] = MapInformation.barrier;
+                    }
+                }
             }
 
+            foreach (var cell in mainSnake.Coords)
+            {
+                MapInformation.map[cell.X, cell.Y] = MapInformation.barrier;
+            }
+
+            // Будем считать голову свободной ячейкой для удобства расчетов
             MapInformation.map[mainSnake.HeadPosition.X, mainSnake.HeadPosition.Y] = -1;
 
+            // Находим путь до каждого фрукта
             List<List<Point>> paths = new List<List<Point>>();
             foreach (var fruit in state.Food)
             {
                 var path = FindPath(mainSnake.HeadPosition, fruit, MapInformation.map, state.Width, state.Height);
-                paths.Add(path);
+                // Если нашли путь, добавляем его в список
+                if(path.Count > 0)
+                {
+                    paths.Add(path);
+                }
             }
 
-            List<Point> pathToNearestFruit = null;
-
-            foreach (var p in paths.OrderBy(x => x.Count))
+            List<List<Point>> checkedPaths = new List<List<Point>>();
+            
+            foreach (var path in paths)
             {
-                if (p?.Count == 0)
-                {
-                    continue;
-                }
+                Point fruit = path.Last();
+                bool dangerousPath = false;
 
-                if (state.Snakes.Where(s => s.Id != state.You).Any(s => s.Coords[0].X == p.Last().X - 1 && s.Coords[0].Y == p.Last().Y) ||
-                    state.Snakes.Where(s => s.Id != state.You).Any(s => s.Coords[0].X == p.First().X - 1 && s.Coords[0].Y == p.First().Y))
+                if (enemies.Count() > 0)
                 {
-                    if (state.Snakes.Where(s => s.Id != state.You)?.SingleOrDefault(s => s.Coords[0].X == p.Last().X - 1 && s.Coords[0].Y == p.Last().Y)?.Coords?.Length >= mainSnake.Coords.Length ||
-                        state.Snakes.Where(s => s.Id != state.You)?.SingleOrDefault(s => s.Coords[0].X == p.First().X - 1 && s.Coords[0].Y == p.First().Y)?.Coords?.Length >= mainSnake.Coords.Length)
+                    foreach (var enemy in enemies)
                     {
-                        continue;
+                        // Если вражеская змея в шаге от фрукта
+                        if ((Math.Abs(enemy.HeadPosition.X - fruit.X) == 1 && (enemy.HeadPosition.Y - fruit.Y) == 0)
+                            || ((enemy.HeadPosition.X - fruit.X) == 0 && Math.Abs(enemy.HeadPosition.Y - fruit.Y) == 1))
+                        {
+                            // Если нам идти более чем 1 шаг или вражеская змея большем либо равна нашей, то исключаем этот фрукт из выборки
+                            if (enemy.Coords.Length >= mainSnake.Coords.Length)
+                            {
+                                dangerousPath = true;
+                            }
+                        }
                     }
-                }
-                if (state.Snakes.Where(s => s.Id != state.You).Any(s => s.Coords[0].X == p.Last().X + 1 && s.Coords[0].Y == p.Last().Y) ||
-                    state.Snakes.Where(s => s.Id != state.You).Any(s => s.Coords[0].X == p.First().X + 1 && s.Coords[0].Y == p.First().Y))
-                {
-                    if (state.Snakes.Where(s => s.Id != state.You)?.SingleOrDefault(s => s.Coords[0].X == p.Last().X + 1 && s.Coords[0].Y == p.Last().Y)?.Coords?.Length >= mainSnake.Coords.Length ||
-                        state.Snakes.Where(s => s.Id != state.You)?.SingleOrDefault(s => s.Coords[0].X == p.First().X + 1 && s.Coords[0].Y == p.First().Y)?.Coords?.Length >= mainSnake.Coords.Length)
-                    {
-                        continue;
-                    }
-                }
-                if (state.Snakes.Where(s => s.Id != state.You).Any(s => s.Coords[0].X == p.Last().X && s.Coords[0].Y == p.Last().Y - 1) ||
-                    state.Snakes.Where(s => s.Id != state.You).Any(s => s.Coords[0].X == p.First().X && s.Coords[0].Y == p.First().Y - 1))
-                {
-                    if (state.Snakes.Where(s => s.Id != state.You)?.SingleOrDefault(s => s.Coords[0].X == p.Last().X && s.Coords[0].Y == p.Last().Y - 1)?.Coords?.Length >= mainSnake.Coords.Length ||
-                        state.Snakes.Where(s => s.Id != state.You)?.SingleOrDefault(s => s.Coords[0].X == p.First().X && s.Coords[0].Y == p.First().Y - 1)?.Coords?.Length >= mainSnake.Coords.Length)
-                    {
-                        continue;
-                    }
-                }
-                if (state.Snakes.Where(s => s.Id != state.You).Any(s => s.Coords[0].X == p.Last().X && s.Coords[0].Y == p.Last().Y + 1) ||
-                    state.Snakes.Where(s => s.Id != state.You).Any(s => s.Coords[0].X == p.First().X && s.Coords[0].Y == p.First().Y + 1))
-                {
-                    if (state.Snakes.Where(s => s.Id != state.You)?.SingleOrDefault(s => s.Coords[0].X == p.Last().X && s.Coords[0].Y == p.Last().Y + 1)?.Coords?.Length >= mainSnake.Coords.Length ||
-                        state.Snakes.Where(s => s.Id != state.You)?.SingleOrDefault(s => s.Coords[0].X == p.First().X && s.Coords[0].Y == p.First().Y + 1)?.Coords?.Length >= mainSnake.Coords.Length)
-                    {
-                        continue;
-                    }
-                }
 
-                pathToNearestFruit = p;
-                break;
+                    if (!dangerousPath)
+                    {
+                        checkedPaths.Add(path);
+                    }
+                }
+                else
+                {
+                    checkedPaths.Add(path);
+                }
             }
+
+            List<Point> pathToNearestFruit = checkedPaths.OrderBy(x => x.Count).FirstOrDefault();
 
             // Если нашли путь до фрукта
             if (pathToNearestFruit != null)
